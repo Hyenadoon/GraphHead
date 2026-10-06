@@ -12,12 +12,37 @@ const FILTERS: Array<{ key: 'all' | NodeKind; label: string }> = [
   { key: 'influence', label: 'INFLUENCES' },
 ]
 
+const PATHS = [
+  {
+    title: 'THE RUPTURE',
+    note: 'How the post-OK Computer crisis turns into a new production grammar.',
+    nodeIds: ['okc', 'kida', 'editing', 'autechre', 'aphex'],
+  },
+  {
+    title: 'RHYTHM MACHINE',
+    note: 'Follow rhythmic instability from Kid A into the later mature catalogue.',
+    nodeIds: ['idioteque', 'rhythm', '15step', 'bloom'],
+  },
+  {
+    title: 'JAZZ LEAK',
+    note: 'The 2000–01 detour is not just electronics: trace Mingus and Alice Coltrane into Kid A / Amnesiac.',
+    nodeIds: ['mingus', 'alice-coltrane', 'kida', 'nationalanthem', 'amnesiac', 'glasshouse'],
+  },
+  {
+    title: 'BACK TO THE BODY',
+    note: 'A route from over-analysis toward the more immediate In Rainbows sessions.',
+    nodeIds: ['httt', 'rainbows', 'immediacy', '15step', 'weirdfishes'],
+  },
+]
+
 function App() {
   const [filter, setFilter] = useState<'all' | NodeKind>('all')
   const [selectedNodeId, setSelectedNodeId] = useState<string>('kida')
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [showSources, setShowSources] = useState(false)
   const [showMethod, setShowMethod] = useState(false)
+  const [showPaths, setShowPaths] = useState(false)
+  const [query, setQuery] = useState('')
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedEdge = selectedEdgeId ? edges.find((edge) => edge.id === selectedEdgeId) ?? null : null
@@ -26,6 +51,14 @@ function App() {
     if (!selectedNode) return []
     return edges.filter((edge) => edge.from === selectedNode.id || edge.to === selectedNode.id)
   }, [selectedNode])
+
+  const searchResults = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return []
+    return nodes
+      .filter((node) => node.label.toLowerCase().includes(needle) || node.summary.toLowerCase().includes(needle))
+      .slice(0, 7)
+  }, [query])
 
   const resolveSource = (id: string) => sources.find((source) => source.id === id)
   const sourceIds = selectedEdge?.sourceIds ?? selectedNode?.sourceIds ?? []
@@ -47,10 +80,11 @@ function App() {
         </button>
         <div className="project-note">
           <span>RADIOHEAD AS A SYSTEM OF CONNECTIONS</span>
-          <span>1993—2016 / VERSION 0.1</span>
+          <span>1993—2016 / VERSION 0.2</span>
         </div>
         <nav className="utility-nav">
           <button onClick={() => setShowMethod(true)}>METHOD</button>
+          <button onClick={() => setShowPaths(true)}>PATHS</button>
           <button onClick={() => setShowSources(true)}>SOURCES <sup>{String(sources.length).padStart(2, '0')}</sup></button>
         </nav>
       </header>
@@ -66,6 +100,24 @@ function App() {
             {item.label}
           </button>
         ))}
+        <div className="node-search">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="FIND A NODE…"
+            aria-label="Find a node"
+          />
+          {searchResults.length > 0 && (
+            <div className="search-results">
+              {searchResults.map((node) => (
+                <button key={node.id} onClick={() => { selectNode(node); setQuery('') }}>
+                  <span>{node.label}</span>
+                  <small>{node.year} / {node.kind}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="legend">
           <span><i className="legend-dot album" /> release</span>
           <span><i className="legend-dot track" /> track</span>
@@ -93,6 +145,7 @@ function App() {
               <p className="eyebrow">{selectedNode.eyebrow ?? `${selectedNode.year}`}</p>
               <h1>{selectedNode.label}</h1>
               <p className="node-summary">{selectedNode.summary}</p>
+              {selectedNode.detail && <p className="node-detail">{selectedNode.detail}</p>}
 
               <div className="source-strip">
                 <span>SUPPORTED BY</span>
@@ -105,7 +158,7 @@ function App() {
 
               <div className="relations-list">
                 <div className="section-title"><span>RELATIONS</span><span>{String(nodeRelations.length).padStart(2, '0')}</span></div>
-                {nodeRelations.slice(0, 8).map((relation) => {
+                {nodeRelations.slice(0, 14).map((relation) => {
                   const otherId = relation.from === selectedNode.id ? relation.to : relation.from
                   const other = nodes.find((node) => node.id === otherId)
                   if (!other) return null
@@ -145,9 +198,41 @@ function App() {
       </section>
 
       <footer className="footer-line">
-        <span>DRAG TO MOVE · WHEEL TO ZOOM · CLICK A LINE FOR ITS SOURCE</span>
+        <span>DRAG · WHEEL TO ZOOM · SEARCH A NODE · CLICK A LINE FOR EVIDENCE</span>
         <span>GRAPHHEAD / DIGITAL MUSIC HISTORY STUDY</span>
       </footer>
+
+      {showPaths && (
+        <div className="modal-backdrop" onMouseDown={() => setShowPaths(false)}>
+          <section className="modal path-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div><span className="eyebrow">GUIDED READING</span><h2>Four ways into the map.</h2></div>
+              <button onClick={() => setShowPaths(false)}>CLOSE ×</button>
+            </div>
+            <p className="modal-intro">The graph is intentionally non-linear, which is useful until it becomes a decorative bowl of spaghetti. These short trails give you a point of entry without turning the project back into a chapter-by-chapter textbook.</p>
+            <div className="path-grid">
+              {PATHS.map((path, index) => (
+                <article className="path-card" key={path.title}>
+                  <span className="path-no">{String(index + 1).padStart(2, '0')}</span>
+                  <h3>{path.title}</h3>
+                  <p>{path.note}</p>
+                  <div className="path-nodes">
+                    {path.nodeIds.map((id, nodeIndex) => {
+                      const node = nodes.find((item) => item.id === id)
+                      if (!node) return null
+                      return (
+                        <button key={id} onClick={() => { selectNode(node); setShowPaths(false) }}>
+                          <span>{nodeIndex + 1}</span>{node.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
 
       {showSources && (
         <div className="modal-backdrop" onMouseDown={() => setShowSources(false)}>
