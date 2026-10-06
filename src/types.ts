@@ -23,10 +23,11 @@ export type GraphNode = {
   eyebrow?: string
   summary: string
   detail?: string
+  readMore?: string[]
   sourceIds: string[]
 }
 
-export type RelationType = 'contains' | 'evolves' | 'uses' | 'influenced-by' | 'interprets' | 'echoes'
+export type RelationType = 'contains' | 'evolves' | 'uses' | 'influenced-by' | 'interprets' | 'echoes' | 'subtype'
 
 export type GraphEdge = {
   id: string
