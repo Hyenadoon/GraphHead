@@ -93,10 +93,13 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
   }
 
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragRef.current) return
-    const dx = event.clientX - dragRef.current.x
-    const dy = event.clientY - dragRef.current.y
-    setView((prev) => ({ ...prev, x: dragRef.current!.viewX + dx, y: dragRef.current!.viewY + dy }))
+    const drag = dragRef.current
+    if (!drag) return
+    const dx = event.clientX - drag.x
+    const dy = event.clientY - drag.y
+    const nextX = drag.viewX + dx
+    const nextY = drag.viewY + dy
+    setView((prev) => ({ ...prev, x: nextX, y: nextY }))
   }
 
   const onPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
