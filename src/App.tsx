@@ -31,7 +31,17 @@ const PATHS = [
   {
     title: 'BACK TO THE BODY',
     note: 'A route from over-analysis toward the more immediate In Rainbows sessions.',
-    nodeIds: ['httt', 'rainbows', 'immediacy', '15step', 'weirdfishes'],
+    nodeIds: ['httt', 'rainbows', 'immediacy', '15step', 'weirdfishes', 'mortality', 'intimacy'],
+  },
+  {
+    title: 'HOW TO BREAK A ROCK SONG',
+    note: 'A compact theory route through form, meter, timbre and harmony: the mechanics behind the “Radiohead feeling”.',
+    nodeIds: ['formal', 'terminal-climax', 'throughcomposed', 'rhythm', 'oddmeter', 'timbre', 'source-deform', 'harmony', 'absenttonic'],
+  },
+  {
+    title: 'PUBLIC PANIC / PRIVATE PANIC',
+    note: 'Watch the scale of anxiety move from systems and war toward bodies, relationships, loss and ecology.',
+    nodeIds: ['technology', 'authority', 'climate', 'mortality', 'intimacy', 'loss', 'fear'],
   },
 ]
 
@@ -56,8 +66,11 @@ function App() {
     const needle = query.trim().toLowerCase()
     if (!needle) return []
     return nodes
-      .filter((node) => node.label.toLowerCase().includes(needle) || node.summary.toLowerCase().includes(needle))
-      .slice(0, 7)
+      .filter((node) => {
+        const haystack = [node.label, node.summary, node.detail ?? '', ...(node.readMore ?? [])].join(' ').toLowerCase()
+        return haystack.includes(needle)
+      })
+      .slice(0, 9)
   }, [query])
 
   const resolveSource = (id: string) => sources.find((source) => source.id === id)
@@ -80,7 +93,7 @@ function App() {
         </button>
         <div className="project-note">
           <span>RADIOHEAD AS A SYSTEM OF CONNECTIONS</span>
-          <span>1993—2016 / VERSION 0.2</span>
+          <span>1993—2016 / VERSION 0.3</span>
         </div>
         <nav className="utility-nav">
           <button onClick={() => setShowMethod(true)}>METHOD</button>
