@@ -36,6 +36,7 @@ const relationClass = {
   'influenced-by': 'influenced-by',
   interprets: 'interprets',
   echoes: 'echoes',
+  subtype: 'subtype',
 } as const
 
 function yearToX(year: number) {
