@@ -146,6 +146,14 @@ function App() {
               <h1>{selectedNode.label}</h1>
               <p className="node-summary">{selectedNode.summary}</p>
               {selectedNode.detail && <p className="node-detail">{selectedNode.detail}</p>}
+              {selectedNode.readMore && selectedNode.readMore.length > 0 && (
+                <div className="reading-notes">
+                  <div className="section-title"><span>READING NOTES</span><span>{String(selectedNode.readMore.length).padStart(2, '0')}</span></div>
+                  {selectedNode.readMore.map((paragraph, index) => (
+                    <p key={index}><sup>{String(index + 1).padStart(2, '0')}</sup>{paragraph}</p>
+                  ))}
+                </div>
+              )}
 
               <div className="source-strip">
                 <span>SUPPORTED BY</span>
