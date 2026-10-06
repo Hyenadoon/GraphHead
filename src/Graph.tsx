@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GraphEdge, GraphNode, NodeKind } from './types'
 
 type Props = {
@@ -17,8 +17,9 @@ type Point = { x: number; y: number }
 const YEAR_START = 1993
 const YEAR_END = 2016
 const X_START = 220
-const X_END = 2450
-const LANE_Y = [170, 300, 455, 610, 745, 885, 1015, 1145]
+const X_END = 3200
+const LANE_Y = [170, 370, 590, 810, 1030, 1250, 1470, 1690]
+const AXIS_Y = 1815
 
 const kindClass: Record<NodeKind, string> = {
   album: 'album',
@@ -60,7 +61,7 @@ function curve(a: Point, b: Point) {
 export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEdgeId, onNodeSelect, onEdgeSelect }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const dragRef = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null)
-  const [view, setView] = useState<View>({ x: -340, y: -80, scale: 0.72 })
+  const [view, setView] = useState<View>({ x: -270, y: -80, scale: 0.56 })
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
 
@@ -127,7 +128,7 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
     const p = pointMap.get(node.id)
     if (!p || !svgRef.current) return
     const rect = svgRef.current.getBoundingClientRect()
-    const scale = Math.max(view.scale, 0.82)
+    const scale = Math.max(view.scale, 0.7)
     setView({
       scale,
       x: rect.width * 0.43 - p.x * scale,
@@ -135,6 +136,23 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
     })
     onNodeSelect(node)
   }
+
+  useEffect(() => {
+    const node = nodes.find((item) => item.id === selectedNodeId)
+    const p = node ? pointMap.get(node.id) : null
+    const svg = svgRef.current
+    if (!p || !svg) return
+
+    const rect = svg.getBoundingClientRect()
+    setView((prev) => {
+      const scale = Math.max(prev.scale, 0.66)
+      return {
+        scale,
+        x: rect.width * 0.43 - p.x * scale,
+        y: rect.height * 0.48 - p.y * scale,
+      }
+    })
+  }, [selectedNodeId, nodes, pointMap])
 
   const years = [1993, 1995, 1997, 2000, 2001, 2003, 2007, 2011, 2016]
 
@@ -160,21 +178,21 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
         </defs>
 
         <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-          <text className="ghost-title" x="180" y="1020">RADIOHEAD</text>
-          <text className="ghost-subtitle" x="188" y="1070">EXPECTATION / DISRUPTION / RETURN</text>
+          <text className="ghost-title" x="180" y="1570">RADIOHEAD</text>
+          <text className="ghost-subtitle" x="188" y="1620">EXPECTATION / DISRUPTION / RETURN</text>
 
           {years.map((year) => {
             const x = yearToX(year)
             return (
               <g key={year} className="year-guide">
-                <line x1={x} y1={95} x2={x} y2={1210} />
-                <text x={x + 12} y={1244}>{year}</text>
+                <line x1={x} y1={95} x2={x} y2={AXIS_Y} />
+                <text x={x + 12} y={AXIS_Y + 34}>{year}</text>
               </g>
             )
           })}
 
-          <line className="time-axis" x1={X_START} y1="1210" x2={X_END} y2="1210" />
-          <text className="axis-title" x={X_START} y="1280">TIME →</text>
+          <line className="time-axis" x1={X_START} y1={AXIS_Y} x2={X_END} y2={AXIS_Y} />
+          <text className="axis-title" x={X_START} y={AXIS_Y + 70}>TIME →</text>
 
           <g className="lane-labels">
             <text x="38" y={LANE_Y[0] + 4}>METHOD</text>
@@ -261,7 +279,7 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
         <span>Y / SEMANTIC LAYER</span>
         <span>ZOOM {Math.round(view.scale * 100)}%</span>
       </div>
-      <button className="reset-view" onClick={() => setView({ x: -340, y: -80, scale: 0.72 })}>RESET VIEW</button>
+      <button className="reset-view" onClick={() => setView({ x: -270, y: -80, scale: 0.56 })}>RESET VIEW</button>
     </div>
   )
 }
