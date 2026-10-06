@@ -9,7 +9,7 @@ export type Source = {
   publisher: string
   url: string
   note: string
-  tier: 'academic' | 'primary' | 'official' | 'archive'
+  tier: 'academic' | 'primary' | 'official' | 'secondary' | 'archive'
 }
 
 export type GraphNode = {
@@ -22,6 +22,7 @@ export type GraphNode = {
   featured?: boolean
   eyebrow?: string
   summary: string
+  detail?: string
   sourceIds: string[]
 }
 
