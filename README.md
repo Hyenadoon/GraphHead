@@ -12,7 +12,7 @@ GraphHead rejects the usual linear discography page. Time is still the horizonta
 - custom SVG graph renderer (no graph framework)
 - CSS-only motion / visual system
 
-The graph renderer is intentionally custom because chronology is not just metadata here: x-position encodes time, while y-position encodes semantic layer. A generic force-directed graph would make the project look lively while quietly destroying the information architecture, a very traditional software achievement.
+The graph renderer is intentionally custom because chronology is not just metadata here: x-position preserves chronological ordering but expands busy release eras non-linearly; y-position encodes 22 semantic subrows rather than one crowded row per category. A generic force-directed graph would make the project look lively while quietly destroying the information architecture, a very traditional software achievement.
 
 ## Run
 
@@ -26,6 +26,18 @@ Production build:
 ```bash
 npm run build
 ```
+
+## Reading the timeline
+
+GraphHead uses a **density-spaced, non-metrical timeline**. Year markers and releases remain in correct chronological order; the horizontal distance between 1997 and 2000 is **not** meant to imply the same number of elapsed years as the distance between 2007 and 2011. The layout allocates more width to periods with more entries and assigns nodes to 22 horizontal rows.
+
+- Use the year shortcuts at the top of the graph to jump between release eras.
+- Drag to pan and use the mouse wheel to zoom.
+- **FIT HEIGHT** shows all rows around the current selected node; **FOCUS** returns to readable detail.
+- Labels are kept on distinct rows and spaced horizontally; the fixed left rail shows row identity during navigation.
+- Influence nodes are placed near the Radiohead period they explain, **not** at the date their outside subject began their career.
+
+Build verification runs in GitHub Actions on changes to the prototype branch.
 
 ## Information model
 
