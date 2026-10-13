@@ -93,7 +93,7 @@ function App() {
         </button>
         <div className="project-note">
           <span>RADIOHEAD AS A SYSTEM OF CONNECTIONS</span>
-          <span>1993—2016 / VERSION 0.3</span>
+          <span>1993—2016 / VERSION 0.4</span>
         </div>
         <nav className="utility-nav">
           <button onClick={() => setShowMethod(true)}>METHOD</button>
@@ -286,10 +286,10 @@ function App() {
               <button onClick={() => setShowMethod(false)}>CLOSE ×</button>
             </div>
             <div className="method-columns">
-              <article><b>01 / X = TIME</b><p>Every node is anchored to an approximate year. The graph never loses chronology even when a relation jumps a decade.</p></article>
-              <article><b>02 / Y = LAYER</b><p>Albums, tracks, musical methods, themes and outside influences occupy different semantic bands.</p></article>
+              <article><b>01 / X = EXPANDED CHRONOLOGY</b><p>Releases stay in historical order, but busy periods occupy wider horizontal sections. Spacing inside an era is schematic, not a literal number of months. Jump between years using the year strip.</p></article>
+              <article><b>02 / Y = 22 READABLE ROWS</b><p>Tracks, methods, themes, processes and influences each have several independent rows. Horizontal rules and fixed row labels keep the network legible while you pan.</p></article>
               <article><b>03 / LINE = CLAIM</b><p>A line is not decoration. Click it: the inspector shows what the relation means and which source supports it.</p></article>
-              <article><b>04 / FOCUS ≠ COMPLETENESS</b><p>The map concentrates on OK Computer, Kid A, In Rainbows and A Moon Shaped Pool. Other releases remain connective tissue, not a fake total history.</p></article>
+              <article><b>04 / EXPLORE AT TWO SCALES</b><p>FIT HEIGHT reveals all semantic strata around the current era. FOCUS restores readable detail. The map concentrates on four transformations rather than claiming to be a total history.</p></article>
             </div>
           </section>
         </div>
