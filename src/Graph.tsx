@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GraphEdge, GraphNode, NodeKind } from './types'
+import { createGraphLayout } from './layout'
 
 type Props = {
   nodes: GraphNode[]
@@ -13,13 +14,6 @@ type Props = {
 
 type View = { x: number; y: number; scale: number }
 type Point = { x: number; y: number }
-
-const YEAR_START = 1993
-const YEAR_END = 2016
-const X_START = 220
-const X_END = 3200
-const LANE_Y = [170, 370, 590, 810, 1030, 1250, 1470, 1690]
-const AXIS_Y = 1815
 
 const kindClass: Record<NodeKind, string> = {
   album: 'album',
@@ -39,18 +33,6 @@ const relationClass = {
   subtype: 'subtype',
 } as const
 
-function yearToX(year: number) {
-  const t = (year - YEAR_START) / (YEAR_END - YEAR_START)
-  return X_START + t * (X_END - X_START)
-}
-
-function nodePoint(node: GraphNode): Point {
-  return {
-    x: yearToX(node.year + (node.offset ?? 0)),
-    y: LANE_Y[node.lane] ?? LANE_Y[2],
-  }
-}
-
 function curve(a: Point, b: Point) {
   const dx = b.x - a.x
   const bend = Math.max(55, Math.min(220, Math.abs(dx) * 0.28))
@@ -62,11 +44,12 @@ function curve(a: Point, b: Point) {
 export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEdgeId, onNodeSelect, onEdgeSelect }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const dragRef = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null)
-  const [view, setView] = useState<View>({ x: -270, y: -80, scale: 0.56 })
+  const [view, setView] = useState<View>({ x: 0, y: 0, scale: 0.66 })
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
 
-  const pointMap = useMemo(() => new Map(nodes.map((node) => [node.id, nodePoint(node)])), [nodes])
+  const layout = useMemo(() => createGraphLayout(nodes), [nodes])
+  const pointMap = layout.points
   const connectedIds = useMemo(() => {
     const id = hoveredNodeId ?? selectedNodeId
     const set = new Set<string>([id])
@@ -115,7 +98,7 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
     if (!rect) return
     const cursorX = event.clientX - rect.left
     const cursorY = event.clientY - rect.top
-    const nextScale = Math.min(1.45, Math.max(0.43, view.scale * (event.deltaY > 0 ? 0.9 : 1.1)))
+    const nextScale = Math.min(1.7, Math.max(0.16, view.scale * (event.deltaY > 0 ? 0.9 : 1.1)))
     const graphX = (cursorX - view.x) / view.scale
     const graphY = (cursorY - view.y) / view.scale
     setView({
@@ -125,17 +108,32 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
     })
   }
 
-  const focusNode = (node: GraphNode) => {
+  const centerNode = (node: GraphNode, desiredScale = 0.76) => {
     const p = pointMap.get(node.id)
-    if (!p || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
-    const scale = Math.max(view.scale, 0.7)
+    const rect = svgRef.current?.getBoundingClientRect()
+    if (!p || !rect) return
+    setView({
+      scale: desiredScale,
+      x: rect.width * 0.44 - p.x * desiredScale,
+      y: rect.height * 0.50 - p.y * desiredScale,
+    })
+  }
+
+  const focusNode = (node: GraphNode) => {
+    centerNode(node, Math.max(view.scale, 0.76))
+    onNodeSelect(node)
+  }
+
+  const fitHeight = () => {
+    const rect = svgRef.current?.getBoundingClientRect()
+    const p = pointMap.get(selectedNodeId)
+    if (!rect || !p) return
+    const scale = Math.min(0.72, Math.max(0.16, (rect.height - 90) / layout.height))
     setView({
       scale,
-      x: rect.width * 0.43 - p.x * scale,
-      y: rect.height * 0.48 - p.y * scale,
+      x: rect.width * 0.45 - p.x * scale,
+      y: rect.height * 0.52 - p.y * scale,
     })
-    onNodeSelect(node)
   }
 
   useEffect(() => {
@@ -149,13 +147,11 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
       const scale = Math.max(prev.scale, 0.66)
       return {
         scale,
-        x: rect.width * 0.43 - p.x * scale,
-        y: rect.height * 0.48 - p.y * scale,
+        x: rect.width * 0.44 - p.x * scale,
+        y: rect.height * 0.50 - p.y * scale,
       }
     })
   }, [selectedNodeId, nodes, pointMap])
-
-  const years = [1993, 1995, 1997, 2000, 2001, 2003, 2007, 2011, 2016]
 
   return (
     <div className="graph-wrap">
@@ -179,32 +175,44 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
         </defs>
 
         <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
-          <text className="ghost-title" x="180" y="1570">RADIOHEAD</text>
-          <text className="ghost-subtitle" x="188" y="1620">EXPECTATION / DISRUPTION / RETURN</text>
-
-          {years.map((year) => {
-            const x = yearToX(year)
-            return (
-              <g key={year} className="year-guide">
-                <line x1={x} y1={95} x2={x} y2={AXIS_Y} />
-                <text x={x + 12} y={AXIS_Y + 34}>{year}</text>
-              </g>
-            )
-          })}
-
-          <line className="time-axis" x1={X_START} y1={AXIS_Y} x2={X_END} y2={AXIS_Y} />
-          <text className="axis-title" x={X_START} y={AXIS_Y + 70}>TIME →</text>
-
-          <g className="lane-labels">
-            <text x="38" y={LANE_Y[0] + 4}>METHOD</text>
-            <text x="38" y={LANE_Y[1] + 4}>TRACK</text>
-            <text x="38" y={LANE_Y[2] + 4}>RELEASE</text>
-            <text x="38" y={LANE_Y[3] + 4}>TRACK</text>
-            <text x="38" y={LANE_Y[4] + 4}>TRACK</text>
-            <text x="38" y={LANE_Y[5] + 4}>PROCESS</text>
-            <text x="38" y={LANE_Y[6] + 4}>THEME</text>
-            <text x="38" y={LANE_Y[7] + 4}>OUTSIDE SIGNAL</text>
+          <g className="era-sections" aria-hidden="true">
+            {layout.eras.map((era, index) => (
+              <rect
+                key={era.year}
+                className={index % 2 === 0 ? 'era-shade' : 'era-shade alternate'}
+                x={era.start - 65}
+                y={80}
+                width={era.end - era.start + 130}
+                height={layout.axisY - 35}
+              />
+            ))}
           </g>
+
+          <g className="lane-rules" aria-hidden="true">
+            {layout.rows.map((row, index) => (
+              <line
+                key={row.id}
+                className={index === 0 || layout.rows[index - 1].group !== row.group ? 'group-start' : ''}
+                x1={85}
+                x2={layout.endX}
+                y1={row.y + 64}
+                y2={row.y + 64}
+              />
+            ))}
+          </g>
+
+          <text className="ghost-title" x={260} y={layout.rows[17].y - 65}>RADIOHEAD</text>
+          <text className="ghost-subtitle" x={268} y={layout.rows[17].y - 18}>EXPECTATION / DISRUPTION / RETURN</text>
+
+          {layout.eras.map((era) => (
+            <g key={era.year} className="year-guide">
+              <line x1={era.center} y1={90} x2={era.center} y2={layout.axisY} />
+              <text x={era.center - 18} y={layout.axisY + 31}>{era.year}</text>
+            </g>
+          ))}
+
+          <line className="time-axis" x1={layout.eras[0].start} y1={layout.axisY} x2={layout.endX - 130} y2={layout.axisY} />
+          <text className="axis-title" x={layout.eras[0].start} y={layout.axisY + 76}>TIME → ERA WIDTH REFLECTS CONTENT DENSITY, NOT YEARS ELAPSED</text>
 
           <g className="edges-layer">
             {edges.map((edge) => {
@@ -219,7 +227,7 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
                 <g
                   key={edge.id}
                   data-interactive="true"
-                  className={`edge-hitgroup ${relationClass[edge.type]} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isConnected ? 'connected' : ''} ${!isVisible ? 'filtered' : ''}`}
+                  className={`edge-hitgroup ${relationClass[edge.type]} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isConnected ? 'connected' : 'muted'} ${!isVisible ? 'filtered' : ''}`}
                   onMouseEnter={() => setHoveredEdgeId(edge.id)}
                   onMouseLeave={() => setHoveredEdgeId(null)}
                   onClick={(event) => { event.stopPropagation(); onEdgeSelect(edge) }}
@@ -275,12 +283,41 @@ export default function Graph({ nodes, edges, filter, selectedNodeId, selectedEd
         </g>
       </svg>
 
+      <nav className="era-nav" aria-label="Jump to release year">
+        <span>JUMP /</span>
+        {layout.eras.map((era) => (
+          <button
+            key={era.year}
+            title={String(era.year)}
+            className={nodes.some((node) => node.id === selectedNodeId && node.kind === 'album' && node.year === era.year) ? 'active' : ''}
+            onClick={() => {
+              const release = nodes.find((node) => node.kind === 'album' && node.year === era.year)
+              if (release) focusNode(release)
+            }}
+          >{era.year}</button>
+        ))}
+      </nav>
+      <div className="lane-rail" aria-hidden="true">
+        {layout.rows.map((row, index) => (
+          <span
+            key={row.id}
+            className={index === 0 || layout.rows[index - 1].group !== row.group ? 'major' : ''}
+            style={{ top: view.y + row.y * view.scale }}
+          >{row.label}</span>
+        ))}
+      </div>
       <div className="graph-coordinates">
-        <span>X / CHRONOLOGY</span>
-        <span>Y / SEMANTIC LAYER</span>
+        <span>X / DENSITY-SPACED TIME</span>
+        <span>Y / 22 SEMANTIC ROWS</span>
         <span>ZOOM {Math.round(view.scale * 100)}%</span>
       </div>
-      <button className="reset-view" onClick={() => setView({ x: -270, y: -80, scale: 0.56 })}>RESET VIEW</button>
+      <div className="graph-tools">
+        <button onClick={fitHeight}>FIT HEIGHT</button>
+        <button onClick={() => {
+          const node = nodes.find((item) => item.id === selectedNodeId)
+          if (node) centerNode(node)
+        }}>FOCUS</button>
+      </div>
     </div>
   )
 }
